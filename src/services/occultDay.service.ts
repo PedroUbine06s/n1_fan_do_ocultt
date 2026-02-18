@@ -1,27 +1,40 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.RIOT_API_BASE_URL || 'https://br1.api.riotgames.com';
-const REGIONAL_URL = process.env.RIOT_REGIONAL_URL || 'https://americas.api.riotgames.com';
-const RIOT_KEY = process.env.RIOT_KEY || '';
+function getConfig() {
+  const API_BASE_URL = process.env.RIOT_API_BASE_URL;
+  const REGIONAL_URL = process.env.RIOT_REGIONAL_URL;
+  const RIOT_KEY = process.env.RIOT_KEY;
+  const OCCULT_DAY_GAME_NAME = process.env.OCCULT_DAY_GAME_NAME;
+  const OCCULT_DAY_TAG_LINE = process.env.OCCULT_DAY_TAG_LINE;
 
-const occultDayGameName = process.env.OCCULT_DAY_GAME_NAME || 'occultday';
-const occultDayTagLine = process.env.OCCULT_DAY_TAG_LINE || 'occultday';
+  if (!API_BASE_URL || !REGIONAL_URL || !RIOT_KEY || !OCCULT_DAY_GAME_NAME || !OCCULT_DAY_TAG_LINE) {
+    throw new Error('Missing required environment variables');
+  }
 
-const riotHeaders = {
-  'X-Riot-Token': RIOT_KEY,
-};
+  return { API_BASE_URL, REGIONAL_URL, RIOT_KEY, OCCULT_DAY_GAME_NAME, OCCULT_DAY_TAG_LINE };
+}
 
 export async function getOccultDayData() {
+  const { API_BASE_URL, RIOT_KEY } = getConfig();
+
   const response = await axios.get(`${API_BASE_URL}/occult-day`, {
-    headers: riotHeaders,
+    headers: { 'X-Riot-Token': RIOT_KEY },
   });
   return response.data;
 }
 
 export async function getOccultDayPuuid() {
-  const response = await axios.get(
-    `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${occultDayGameName}/${occultDayTagLine}`,
-    { headers: riotHeaders },
-  );
-  return response.data;
+  const { REGIONAL_URL, RIOT_KEY, OCCULT_DAY_GAME_NAME, OCCULT_DAY_TAG_LINE } = getConfig();
+
+  try {
+    const response = await axios.get(
+      `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${OCCULT_DAY_GAME_NAME}/${OCCULT_DAY_TAG_LINE}`,
+      { headers: { 'X-Riot-Token': RIOT_KEY } },
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Occult Day PUUID:', error);
+    throw error;
+  }
 }
+
