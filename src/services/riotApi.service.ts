@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 function getConfig() {
   const API_BASE_URL = process.env.RIOT_API_BASE_URL;
@@ -26,6 +26,16 @@ export interface RankedEntry {
   puuid: string;
 }
 
+export async function getPuuidByRiotId(gameName: string, tagLine: string): Promise<string> {
+  const { REGIONAL_URL } = getConfig();
+
+  const response = await axios.get(
+    `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
+    { headers: riotHeaders() },
+  );
+  return response.data.puuid;
+}
+
 export async function getRankedEntries(puuid: string): Promise<RankedEntry[]> {
   try {
     const { API_BASE_URL } = getConfig();
@@ -36,7 +46,8 @@ export async function getRankedEntries(puuid: string): Promise<RankedEntry[]> {
     );
     return response.data;
   } catch (error) {
-    console.error('[ERRO] Falha ao buscar ranked entries:', error instanceof Error ? error.message : error);
+    if (error instanceof AxiosError && error.response?.status === 400) throw error;
+    console.error(error);
     return [];
   }
 }
@@ -54,7 +65,8 @@ export async function getMatchIds(puuid: string, count = 5): Promise<string[]> {
     );
     return response.data;
   } catch (error) {
-    console.error('[ERRO] Falha ao buscar match ids:', error instanceof Error ? error.message : error);
+    if (error instanceof AxiosError && error.response?.status === 400) throw error;
+    console.error(error);
     return [];
   }
 }
