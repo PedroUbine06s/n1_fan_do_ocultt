@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { listRecipients } from './database.service';
+import { listRecipients, getMatchHistory } from './database.service';
+import { getDistanceToGold } from './tracker.service';
 
 export interface MatchResult {
   matchId: string;
@@ -79,7 +80,16 @@ export async function notifyMatchResult(result: MatchResult, phone?: string): Pr
   console.log('========================================');
   console.log('');
 
-  const message = formatMatchMessage(result);
+  const baseMessage = formatMatchMessage(result);
+
+  // Append current elo and distance to Gold IV
+  const distance = getDistanceToGold();
+  const eloLine = `Elo atual: ${result.tier} ${result.rank} ${result.lp} LP`;
+  const distanceLine = distance.alreadyGold
+    ? 'Status: já está em Gold IV ou acima.'
+    : `Faltam ${distance.divisions} divisão(ões) (~${distance.estimatedLP} LP) até GOLD IV`;
+
+  const message = [baseMessage, eloLine, distanceLine].join('\n');
 
   // If a specific phone was provided, send only to it.
   if (phone) {
@@ -117,6 +127,40 @@ export async function notifyMatchResult(result: MatchResult, phone?: string): Pr
     return anySuccess;
   } catch (err: any) {
     console.error('[NOTIF] Erro ao buscar recipients e enviar mensagens:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * Busca a última partida salva no banco e dispara notificações usando `notifyMatchResult`.
+ * Se `phone` for fornecido, envia apenas para esse número; caso contrário envia para recipients ativos.
+ */
+export async function notifyLastSavedMatch(phone?: string): Promise<boolean> {
+  try {
+    const matches = await getMatchHistory(1);
+    if (!matches || matches.length === 0) {
+      console.warn('[NOTIF] Nenhuma partida encontrada no banco para enviar.');
+      return false;
+    }
+
+    const m = matches[0] as any;
+
+    const matchResult: MatchResult = {
+      matchId: m.matchId,
+      win: !!m.win,
+      kills: m.kills || 0,
+      deaths: m.deaths || 0,
+      assists: m.assists || 0,
+      championName: m.championName || 'unknown',
+      lp: m.lp || 0,
+      tier: m.tier || '',
+      rank: m.rank || '',
+    };
+
+    const sent = await notifyMatchResult(matchResult, phone);
+    return sent;
+  } catch (err: any) {
+    console.error('[NOTIF] Erro ao buscar última partida e enviar notificação:', err?.message || err);
     return false;
   }
 }
