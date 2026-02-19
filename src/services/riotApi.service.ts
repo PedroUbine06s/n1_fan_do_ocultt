@@ -140,8 +140,8 @@ export interface ActiveGame {
 
 export async function getActiveGame(puuid: string): Promise<ActiveGame | null> {
   try {
-    const { API_BASE_URL } = getConfig();
-    const url = `${API_BASE_URL}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
+    const { REGIONAL_URL } = getConfig();
+    const url = `${REGIONAL_URL}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
 
     // console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
     const response = await axios.get(url, { headers: riotHeaders() });
