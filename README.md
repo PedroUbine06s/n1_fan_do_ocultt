@@ -76,28 +76,6 @@ docker-compose exec postgres psql -U postgres -d occult_day
 docker-compose down && docker-compose up -d
 ```
 
-### Com Makefile (Mac/Linux)
-
-```bash
-make up           # Inicia os containers
-make down         # Para os containers
-make logs         # Mostra logs
-make restart      # Reinicia
-make clean        # Remove tudo
-```
-
-### Com docker-cmd.bat (Windows)
-
-```bash
-docker-cmd.bat up        # Inicia os containers
-docker-cmd.bat down      # Para os containers
-docker-cmd.bat logs      # Mostra logs
-docker-cmd.bat restart   # Reinicia
-docker-cmd.bat clean     # Remove tudo
-```
-
----
-
 ## � Arquitetura Docker
 
 ### Containers
@@ -133,21 +111,6 @@ Os dados do PostgreSQL são salvos em um Docker Volume chamado `postgres_data`, 
 - ✅ Backup fácil do volume
 
 ---
-
-## 📊 Endpoints
-
-### Windows
-
-```bash
-setup.bat
-```
-
-### Mac/Linux
-
-```bash
-chmod +x setup.sh
-./setup.sh
-```
 
 ## Setup Manual
 
@@ -187,21 +150,13 @@ WAPI_DEFAULT_PHONE=5511999999999
 DATABASE_URL=postgresql://user:password@localhost:5432/occult_day
 ```
 
-### 3. Setup do Banco de Dados
-
-#### Instalar PostgreSQL
-
-- **Windows**: [Download PostgreSQL](https://www.postgresql.org/download/windows/)
-- **Mac**: `brew install postgresql`
-- **Linux**: `sudo apt install postgresql postgresql-contrib`
-
-#### Criar banco de dados
-
-```bash
-psql -U postgres
-CREATE DATABASE occult_day;
-\q
-```
+### 3. Acessar banco de dados
+    Via dbeaver acessar:
+   **postgres**
+   - Porta: 5432
+   - Usuário: postgres
+   - Senha: postgres
+   - DB: occult_day
 
 #### Executar migrações
 
