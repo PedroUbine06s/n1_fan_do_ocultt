@@ -115,6 +115,8 @@ async function processMatch(matchId: string): Promise<void> {
 }
 
 async function checkForNewMatches(retry = true): Promise<void> {
+  console.log('\n\x1b[90m--------------------------------------------------------------------------------\x1b[0m');
+  const cycleStart = Date.now();
   try {
     await initialize();
     const state = getState();
@@ -123,6 +125,7 @@ async function checkForNewMatches(retry = true): Promise<void> {
     const matchIds = await getMatchIds(puuid, 5);
 
     if (matchIds.length === 0) {
+      console.log(`\x1b[33m[CRON] Nenhuma partida encontrada (ciclo: ${Date.now() - cycleStart}ms)\x1b[0m`);
       return;
     }
 
@@ -133,6 +136,7 @@ async function checkForNewMatches(retry = true): Promise<void> {
     }
 
     if (newMatchIds.length === 0) {
+      console.log(`\x1b[33m[CRON] Sem partidas novas (ciclo: ${Date.now() - cycleStart}ms)\x1b[0m`);
       return;
     }
 
@@ -155,7 +159,9 @@ async function checkForNewMatches(retry = true): Promise<void> {
       invalidatePuuid();
       return checkForNewMatches(false);
     }
-    console.error('[ERRO] Falha no cron:', error instanceof Error ? error.message : error);
+    console.error(`\x1b[31m[ERRO] Falha no cron:\x1b[0m`, error instanceof Error ? error.message : error);
+  } finally {
+    console.log(`\x1b[35m[CRON] Ciclo completo em ${Date.now() - cycleStart}ms\x1b[0m`);
   }
 }
 

@@ -28,26 +28,28 @@ export interface RankedEntry {
 
 export async function getPuuidByRiotId(gameName: string, tagLine: string): Promise<string> {
   const { REGIONAL_URL } = getConfig();
+  const url = `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
 
-  const response = await axios.get(
-    `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
-    { headers: riotHeaders() },
-  );
+  console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
+  const start = Date.now();
+  const response = await axios.get(url, { headers: riotHeaders() });
+  console.log(`\x1b[32m[API] getPuuidByRiotId concluido em ${Date.now() - start}ms\x1b[0m`);
   return response.data.puuid;
 }
 
 export async function getRankedEntries(puuid: string): Promise<RankedEntry[]> {
   try {
     const { API_BASE_URL } = getConfig();
+    const url = `${API_BASE_URL}/lol/league/v4/entries/by-puuid/${puuid}`;
 
-    const response = await axios.get(
-      `${API_BASE_URL}/lol/league/v4/entries/by-puuid/${puuid}`,
-      { headers: riotHeaders() },
-    );
+    console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
+    const start = Date.now();
+    const response = await axios.get(url, { headers: riotHeaders() });
+    console.log(`\x1b[32m[API] getRankedEntries concluido em ${Date.now() - start}ms\x1b[0m`);
     return response.data;
   } catch (error) {
+    console.error(`\x1b[31m[API] getRankedEntries ERRO apos request:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
     if (error instanceof AxiosError && error.response?.status === 400) throw error;
-    console.error(error);
     return [];
   }
 }
@@ -55,18 +57,19 @@ export async function getRankedEntries(puuid: string): Promise<RankedEntry[]> {
 export async function getMatchIds(puuid: string, count = 5): Promise<string[]> {
   try {
     const { REGIONAL_URL } = getConfig();
+    const url = `${REGIONAL_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
 
-    const response = await axios.get(
-      `${REGIONAL_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-      {
-        headers: riotHeaders(),
-        params: { type: 'ranked', count },
-      },
-    );
+    console.log(`\n\x1b[36m[API] GET ${url} (count=${count})\x1b[0m`);
+    const start = Date.now();
+    const response = await axios.get(url, {
+      headers: riotHeaders(),
+      params: { type: 'ranked', count },
+    });
+    console.log(`\x1b[32m[API] getMatchIds concluido em ${Date.now() - start}ms (${response.data.length} resultados)\x1b[0m`);
     return response.data;
   } catch (error) {
+    console.error(`\x1b[31m[API] getMatchIds ERRO apos request:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
     if (error instanceof AxiosError && error.response?.status === 400) throw error;
-    console.error(error);
     return [];
   }
 }
@@ -97,14 +100,15 @@ export interface MatchDetail {
 export async function getMatchDetail(matchId: string): Promise<MatchDetail | null> {
   try {
     const { REGIONAL_URL } = getConfig();
+    const url = `${REGIONAL_URL}/lol/match/v5/matches/${matchId}`;
 
-    const response = await axios.get(
-      `${REGIONAL_URL}/lol/match/v5/matches/${matchId}`,
-      { headers: riotHeaders() },
-    );
+    console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
+    const start = Date.now();
+    const response = await axios.get(url, { headers: riotHeaders() });
+    console.log(`\x1b[32m[API] getMatchDetail concluido em ${Date.now() - start}ms\x1b[0m`);
     return response.data;
   } catch (error) {
-    console.error('[ERRO] Falha ao buscar detalhes da partida:', error instanceof Error ? error.message : error);
+    console.error(`\x1b[31m[API] getMatchDetail ERRO:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
     return null;
   }
 }
