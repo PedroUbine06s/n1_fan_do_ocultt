@@ -13,6 +13,7 @@ const GOLD_IV_INDEX = RANK_LADDER.indexOf('GOLD IV');
 
 export interface TrackerState {
   lastMatchId: string | null;
+  lastActiveGameId: number | null;
   wins: number;
   losses: number;
   lpHistory: { lp: number; tier: string; rank: string; timestamp: Date }[];
@@ -23,6 +24,7 @@ export interface TrackerState {
 
 const state: TrackerState = {
   lastMatchId: null,
+  lastActiveGameId: null,
   wins: 0,
   losses: 0,
   lpHistory: [],
@@ -37,6 +39,10 @@ export function getState(): TrackerState {
 
 export function setLastMatchId(matchId: string): void {
   state.lastMatchId = matchId;
+}
+
+export function setLastActiveGameId(gameId: number | null): void {
+  state.lastActiveGameId = gameId;
 }
 
 export function recordWin(): void {

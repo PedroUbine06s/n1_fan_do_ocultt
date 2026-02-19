@@ -166,3 +166,51 @@ export async function notifyLastSavedMatch(phone?: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Envia notificação quando o jogador entra em uma partida.
+ */
+export async function notifyPlayerOnline(gameMode: string, phone?: string): Promise<boolean> {
+  const name = process.env.OCCULT_DAY_GAME_NAME || 'O jogador';
+  const baseMessage = `🟢 *${name}* está ONLINE e acabou de entrar em uma partida!\nModo: ${gameMode}`;
+
+  console.log('');
+  console.log('========================================');
+  console.log(`  [ONLINE] ${name} entrou em partida: ${gameMode}`);
+  console.log('========================================');
+  console.log('');
+
+  if (phone) {
+    return await sendWhatsAppMessage(phone, baseMessage, 0);
+  }
+
+  const defaultPhone = process.env.WAPI_DEFAULT_PHONE;
+  if (defaultPhone) {
+    return await sendWhatsAppMessage(defaultPhone, baseMessage, 0);
+  }
+
+  try {
+    const recipients = await listRecipients(true);
+    if (!recipients || recipients.length === 0) {
+      console.warn('[NOTIF] Nenhum recipient para alertar inicio de partida.');
+      return false;
+    }
+
+    const toSend = recipients.slice(0, 6);
+    let anySuccess = false;
+
+    for (const r of toSend) {
+      const phoneTo = (r as any).phone;
+      const recipientName = (r as any).name;
+      const prefMessage = recipientName ? `Fala ${recipientName},\n${baseMessage}` : baseMessage;
+      const ok = await sendWhatsAppMessage(phoneTo, prefMessage, 0);
+      console.log(`[NOTIF] Alerta online enviado para ${phoneTo}: ${ok ? 'SUCESSO' : 'FALHA'}`);
+      if (ok) anySuccess = true;
+    }
+
+    return anySuccess;
+  } catch (err: any) {
+    console.error('[NOTIF] Erro ao enviar alerta de jogador online:', err?.message || err);
+    return false;
+  }
+}

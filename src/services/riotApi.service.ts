@@ -124,3 +124,34 @@ export async function getMatchDetail(matchId: string): Promise<MatchDetail | nul
     return null;
   }
 }
+
+export interface ActiveGameParticipant {
+  puuid: string;
+  championId: number;
+}
+
+export interface ActiveGame {
+  gameId: number;
+  gameMode: string;
+  gameType: string;
+  gameQueueConfigId: number;
+  participants: ActiveGameParticipant[];
+}
+
+export async function getActiveGame(puuid: string): Promise<ActiveGame | null> {
+  try {
+    const { API_BASE_URL } = getConfig();
+    const url = `${API_BASE_URL}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
+
+    // console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
+    const response = await axios.get(url, { headers: riotHeaders() });
+    return response.data;
+  } catch (error) {
+    if (error instanceof AxiosError && error.response?.status === 404) {
+      // 404 significa que o jogador não está em uma partida ativa
+      return null;
+    }
+    console.error(`\x1b[31m[API] getActiveGame ERRO:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
+    return null;
+  }
+}
