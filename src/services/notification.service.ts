@@ -41,20 +41,22 @@ async function sendWhatsAppMessage(phone: string, message: string, delayMessage 
   )}`;
 
   try {
-    await axios.post(
-      url,
-      {
-        phone,
-        message,
-        delayMessage,
+    // Some WAPI providers accept `chatId` (group id like 123@g.us). Send both fields
+    // so the provider can pick the correct one. For single numbers, `phone` is used.
+    const payload: any = { message, delayMessage };
+    if (typeof phone === 'string' && phone.endsWith('@g.us')) {
+      payload.chatId = phone;
+      payload.phone = phone; // fallback for providers that expect phone
+    } else {
+      payload.phone = phone;
+    }
+
+    await axios.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
+    });
 
     return true;
   } catch (err: any) {
