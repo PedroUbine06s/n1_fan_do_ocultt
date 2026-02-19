@@ -7,3 +7,5 @@ dist/
 .env.example
 
 
+test_out.txt
+test-spectator.ts

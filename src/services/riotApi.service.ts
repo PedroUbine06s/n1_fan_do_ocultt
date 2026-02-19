@@ -140,16 +140,22 @@ export interface ActiveGame {
 
 export async function getActiveGame(puuid: string): Promise<ActiveGame | null> {
   try {
-    const { REGIONAL_URL } = getConfig();
-    const url = `${REGIONAL_URL}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
+    const { API_BASE_URL } = getConfig();
+    const url = `${API_BASE_URL}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
 
     // console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
     const response = await axios.get(url, { headers: riotHeaders() });
     return response.data;
   } catch (error) {
-    if (error instanceof AxiosError && error.response?.status === 404) {
-      // 404 significa que o jogador não está em uma partida ativa
-      return null;
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 404) {
+        // 404 significa que o jogador não está em uma partida ativa
+        return null;
+      }
+      if (error.response?.status === 403) {
+        // 403 significa que a chave da API não tem permissão para o Spectator
+        return null; // Silencia o erro para não floodar os logs
+      }
     }
     console.error(`\x1b[31m[API] getActiveGame ERRO:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
     return null;
