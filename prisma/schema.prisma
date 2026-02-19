@@ -21,6 +21,7 @@ model Match {
   lp        Int
   tier      String
   rank      String
+  playedAt  DateTime?
   createdAt DateTime @default(now())
 
   @@index([createdAt])

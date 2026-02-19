@@ -8,6 +8,7 @@ import { statsRouter } from './routes/stats.routes';
 import { errorHandler } from './middlewares/error-handler.middleware';
 import { occultDayRouter } from './routes/occultDay.routes';
 import recipientsRouter from './routes/recipients.routes';
+import matchesRouter from './routes/matches.routes';
 
 const app = express();
 
@@ -22,5 +23,6 @@ app.use('/api/stats', statsRouter);
 app.use('/api/occult-day', occultDayRouter);
 app.use('/api/recipients', recipientsRouter);
 app.use(errorHandler);
+app.use('/api/matches', matchesRouter);
 
 export { app };

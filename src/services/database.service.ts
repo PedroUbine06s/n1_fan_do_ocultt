@@ -11,23 +11,28 @@ export interface MatchResultRecord {
   lp: number;
   tier: string;
   rank: string;
+  playedAt?: Date | string | number | null;
 }
 
 export async function saveMatch(matchResult: MatchResultRecord): Promise<boolean> {
   try {
-    await prisma.match.create({
-      data: {
-        matchId: matchResult.matchId,
-        win: matchResult.win,
-        kills: matchResult.kills,
-        deaths: matchResult.deaths,
-        assists: matchResult.assists,
-        championName: matchResult.championName,
-        lp: matchResult.lp,
-        tier: matchResult.tier,
-        rank: matchResult.rank,
-      },
-    });
+    const data: any = {
+      matchId: matchResult.matchId,
+      win: matchResult.win,
+      kills: matchResult.kills,
+      deaths: matchResult.deaths,
+      assists: matchResult.assists,
+      championName: matchResult.championName,
+      lp: matchResult.lp,
+      tier: matchResult.tier,
+      rank: matchResult.rank,
+    };
+
+    if (matchResult.playedAt) {
+      data.playedAt = matchResult.playedAt instanceof Date ? matchResult.playedAt : new Date(matchResult.playedAt as any);
+    }
+
+    await prisma.match.create({ data });
 
     console.log(`[DB] Match ${matchResult.matchId} salvo no banco de dados`);
     return true;
@@ -44,7 +49,10 @@ export async function saveMatch(matchResult: MatchResultRecord): Promise<boolean
 export async function getMatchHistory(limit = 10): Promise<any[]> {
   try {
     const matches = await prisma.match.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { playedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
       take: limit,
     });
     return matches;
@@ -77,6 +85,16 @@ export async function getStats() {
   } catch (error) {
     console.error(`[DB] Erro ao calcular stats:`, error instanceof Error ? error.message : error);
     return null;
+  }
+}
+
+export async function existsMatch(matchId: string): Promise<boolean> {
+  try {
+    const found = await prisma.match.findUnique({ where: { matchId } });
+    return !!found;
+  } catch (error) {
+    console.error('[DB] Erro ao checar existência de match:', error instanceof Error ? error.message : error);
+    return false;
   }
 }
 
