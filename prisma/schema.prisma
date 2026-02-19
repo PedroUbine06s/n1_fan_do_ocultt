@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Match {
+  id        Int     @id @default(autoincrement())
+  matchId   String  @unique
+  win       Boolean
+  kills     Int
+  deaths    Int
+  assists   Int
+  championName String
+  lp        Int
+  tier      String
+  rank      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([matchId])
+}
+
+model Recipient {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique
+  name      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}

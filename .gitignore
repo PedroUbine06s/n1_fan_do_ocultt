@@ -4,3 +4,10 @@ dist/
 *.js.map
 *.d.ts
 !tsconfig.json
+.env.example
+
+docker-entrypoint.sh
+docker-cmd.bat
+Makefile
+setup.bat
+setup.sh

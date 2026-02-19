@@ -28,13 +28,25 @@ export interface RankedEntry {
 
 export async function getPuuidByRiotId(gameName: string, tagLine: string): Promise<string> {
   const { REGIONAL_URL } = getConfig();
-  const url = `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
+  const encodedGameName = encodeURIComponent(gameName);
+  const encodedTagLine = encodeURIComponent(tagLine);
+  const url = `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${encodedGameName}/${encodedTagLine}`;
 
   console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
   const start = performance.now();
-  const response = await axios.get(url, { headers: riotHeaders() });
-  console.log(`\x1b[32m[API] getPuuidByRiotId concluido em ${Math.round(performance.now() - start)}ms\x1b[0m`);
-  return response.data.puuid;
+  try {
+    const response = await axios.get(url, { headers: riotHeaders() });
+    console.log(`\x1b[32m[API] getPuuidByRiotId concluido em ${Math.round(performance.now() - start)}ms\x1b[0m`);
+    return response.data.puuid;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      console.error(`\x1b[31m[API] getPuuidByRiotId ERRO:\x1b[0m`, `Status ${error.response?.status} - ${error.message}`);
+      if (error.response?.status === 403) {
+        console.error(`\x1b[31m[API] Erro 403: Verifique se a chave RIOT_KEY é válida e não expirou\x1b[0m`);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function getRankedEntries(puuid: string): Promise<RankedEntry[]> {

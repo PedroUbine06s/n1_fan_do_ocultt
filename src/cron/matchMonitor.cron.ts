@@ -14,6 +14,7 @@ import {
   getDistanceToGold,
 } from '../services/tracker.service';
 import { notifyMatchResult } from '../services/notification.service';
+import { saveMatch } from '../services/database.service';
 
 let cachedPuuid: string | null = null;
 
@@ -98,7 +99,7 @@ async function processMatch(matchId: string): Promise<void> {
   if (soloQ) {
     updateRankInfo(soloQ.tier, soloQ.rank, soloQ.leaguePoints);
 
-    notifyMatchResult({
+    const sent = await notifyMatchResult({
       matchId,
       win: player.win,
       kills: player.kills,
@@ -109,6 +110,23 @@ async function processMatch(matchId: string): Promise<void> {
       tier: soloQ.tier,
       rank: soloQ.rank,
     });
+
+    console.log(`[NOTIF] Envio WhatsApp: ${sent ? 'SUCESSO' : 'FALHA/NÃO_ENVIADO'}`);
+
+    // Salvar match no banco de dados
+    const saved = await saveMatch({
+      matchId,
+      win: player.win,
+      kills: player.kills,
+      deaths: player.deaths,
+      assists: player.assists,
+      championName: player.championName,
+      lp: soloQ.leaguePoints,
+      tier: soloQ.tier,
+      rank: soloQ.rank,
+    });
+
+    console.log(`[DB] Salvamento: ${saved ? 'SUCESSO' : 'FALHA'}`);
   }
 
   setLastMatchId(matchId);
