@@ -160,7 +160,7 @@ async function checkForNewMatches(retry = true): Promise<void> {
 }
 
 export function startMatchMonitor(): void {
-  const interval = process.env.CRON_INTERVAL || '*/5 * * * *';
+  const interval = process.env.CRON_INTERVAL || '*/2 * * * *';
 
   console.log(`[CRON] Monitor de partidas iniciado (intervalo: ${interval})`);
 
