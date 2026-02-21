@@ -4,6 +4,7 @@ import {
   getRankedEntries,
   getMatchIds,
   getMatchDetail,
+  getActiveGame,
 } from '../services/riotApi.service';
 import {
   getState,
@@ -12,8 +13,10 @@ import {
   recordLoss,
   updateRankInfo,
   getDistanceToGold,
+  setLastActiveGameId,
 } from '../services/tracker.service';
-import { notifyMatchResult } from '../services/notification.service';
+import { notifyMatchResult, notifyPlayerOnline } from '../services/notification.service';
+import { saveMatch } from '../services/database.service';
 
 let cachedPuuid: string | null = null;
 
@@ -98,7 +101,7 @@ async function processMatch(matchId: string): Promise<void> {
   if (soloQ) {
     updateRankInfo(soloQ.tier, soloQ.rank, soloQ.leaguePoints);
 
-    notifyMatchResult({
+    const sent = await notifyMatchResult({
       matchId,
       win: player.win,
       kills: player.kills,
@@ -109,6 +112,23 @@ async function processMatch(matchId: string): Promise<void> {
       tier: soloQ.tier,
       rank: soloQ.rank,
     });
+
+    console.log(`[NOTIF] Envio WhatsApp: ${sent ? 'SUCESSO' : 'FALHA/NÃO_ENVIADO'}`);
+
+    // Salvar match no banco de dados
+    const saved = await saveMatch({
+      matchId,
+      win: player.win,
+      kills: player.kills,
+      deaths: player.deaths,
+      assists: player.assists,
+      championName: player.championName,
+      lp: soloQ.leaguePoints,
+      tier: soloQ.tier,
+      rank: soloQ.rank,
+    });
+
+    console.log(`[DB] Salvamento: ${saved ? 'SUCESSO' : 'FALHA'}`);
   }
 
   setLastMatchId(matchId);
@@ -165,15 +185,35 @@ async function checkForNewMatches(retry = true): Promise<void> {
   }
 }
 
+async function checkForActiveGame(): Promise<void> {
+  try {
+    const puuid = await resolvePuuid();
+    const activeGame = await getActiveGame(puuid);
+    const state = getState();
+
+    if (activeGame) {
+      if (state.lastActiveGameId !== activeGame.gameId) {
+        console.log(`[ONLINE] Nova partida ativa detectada: ${activeGame.gameId}`);
+        setLastActiveGameId(activeGame.gameId);
+        await notifyPlayerOnline(activeGame.gameMode);
+      }
+    }
+  } catch (error) {
+    console.error(`\x1b[31m[ERRO] Falha ao verificar jogo ativo:\x1b[0m`, error instanceof Error ? error.message : error);
+  }
+}
+
 export function startMatchMonitor(): void {
   const interval = process.env.CRON_INTERVAL || '*/2 * * * *';
 
   console.log(`[CRON] Monitor de partidas iniciado (intervalo: ${interval})`);
 
   checkForNewMatches();
+  checkForActiveGame();
 
   cron.schedule(interval, () => {
-    console.log(`[CRON] [${new Date().toLocaleTimeString()}] Verificando novas partidas...`);
+    console.log(`[CRON] [${new Date().toLocaleTimeString()}] Verificando novas partidas e status online...`);
     checkForNewMatches();
+    checkForActiveGame();
   });
 }

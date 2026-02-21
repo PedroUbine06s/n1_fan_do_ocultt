@@ -28,13 +28,25 @@ export interface RankedEntry {
 
 export async function getPuuidByRiotId(gameName: string, tagLine: string): Promise<string> {
   const { REGIONAL_URL } = getConfig();
-  const url = `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
+  const encodedGameName = encodeURIComponent(gameName);
+  const encodedTagLine = encodeURIComponent(tagLine);
+  const url = `${REGIONAL_URL}/riot/account/v1/accounts/by-riot-id/${encodedGameName}/${encodedTagLine}`;
 
   console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
   const start = performance.now();
-  const response = await axios.get(url, { headers: riotHeaders() });
-  console.log(`\x1b[32m[API] getPuuidByRiotId concluido em ${Math.round(performance.now() - start)}ms\x1b[0m`);
-  return response.data.puuid;
+  try {
+    const response = await axios.get(url, { headers: riotHeaders() });
+    console.log(`\x1b[32m[API] getPuuidByRiotId concluido em ${Math.round(performance.now() - start)}ms\x1b[0m`);
+    return response.data.puuid;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      console.error(`\x1b[31m[API] getPuuidByRiotId ERRO:\x1b[0m`, `Status ${error.response?.status} - ${error.message}`);
+      if (error.response?.status === 403) {
+        console.error(`\x1b[31m[API] Erro 403: Verifique se a chave RIOT_KEY é válida e não expirou\x1b[0m`);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function getRankedEntries(puuid: string): Promise<RankedEntry[]> {
@@ -109,6 +121,43 @@ export async function getMatchDetail(matchId: string): Promise<MatchDetail | nul
     return response.data;
   } catch (error) {
     console.error(`\x1b[31m[API] getMatchDetail ERRO:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
+    return null;
+  }
+}
+
+export interface ActiveGameParticipant {
+  puuid: string;
+  championId: number;
+}
+
+export interface ActiveGame {
+  gameId: number;
+  gameMode: string;
+  gameType: string;
+  gameQueueConfigId: number;
+  participants: ActiveGameParticipant[];
+}
+
+export async function getActiveGame(puuid: string): Promise<ActiveGame | null> {
+  try {
+    const { API_BASE_URL } = getConfig();
+    const url = `${API_BASE_URL}/lol/spectator/v5/active-games/by-puuid/${puuid}`;
+
+    // console.log(`\n\x1b[36m[API] GET ${url}\x1b[0m`);
+    const response = await axios.get(url, { headers: riotHeaders() });
+    return response.data;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 404) {
+        // 404 significa que o jogador não está em uma partida ativa
+        return null;
+      }
+      if (error.response?.status === 403) {
+        // 403 significa que a chave da API não tem permissão para o Spectator
+        return null; // Silencia o erro para não floodar os logs
+      }
+    }
+    console.error(`\x1b[31m[API] getActiveGame ERRO:\x1b[0m`, error instanceof AxiosError ? `${error.response?.status} - ${error.message}` : error);
     return null;
   }
 }
