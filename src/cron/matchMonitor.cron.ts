@@ -126,6 +126,7 @@ async function processMatch(matchId: string): Promise<void> {
       lp: soloQ.leaguePoints,
       tier: soloQ.tier,
       rank: soloQ.rank,
+      playedAt: match.info.gameCreation ? new Date(match.info.gameCreation) : undefined,
     });
 
     console.log(`[DB] Salvamento: ${saved ? 'SUCESSO' : 'FALHA'}`);
