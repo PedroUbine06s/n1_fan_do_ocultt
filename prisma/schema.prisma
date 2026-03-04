@@ -13,7 +13,7 @@ datasource db {
 model Match {
   id        Int     @id @default(autoincrement())
   matchId   String  @unique
-  win       Boolean
+  win       Boolean?
   kills     Int
   deaths    Int
   assists   Int
@@ -22,6 +22,7 @@ model Match {
   tier      String
   rank      String
   playedAt  DateTime?
+  gameDuration Int?
   createdAt DateTime @default(now())
 
   @@index([createdAt])

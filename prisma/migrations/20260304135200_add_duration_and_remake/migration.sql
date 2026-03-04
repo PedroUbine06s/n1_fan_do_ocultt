@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Match" ADD COLUMN "gameDuration" INTEGER;
+ALTER TABLE "Match" ALTER COLUMN "win" DROP NOT NULL;

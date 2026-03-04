@@ -4,7 +4,7 @@ import { getDistanceToGold } from './tracker.service';
 
 export interface MatchResult {
   matchId: string;
-  win: boolean;
+  win: boolean | null;
   kills: number;
   deaths: number;
   assists: number;
@@ -12,14 +12,21 @@ export interface MatchResult {
   lp: number;
   tier: string;
   rank: string;
+  gameDuration?: number | null;
 }
 
 function formatMatchMessage(result: MatchResult): string {
-  const outcome = result.win ? 'VITÓRIA' : 'DERROTA';
+  let outcome = result.win ? 'VITÓRIA' : 'DERROTA';
+  if (result.gameDuration && result.gameDuration < 240) {
+    outcome = 'REMAKE';
+  }
   const kda = `${result.kills}/${result.deaths}/${result.assists}`;
+  const mins = result.gameDuration ? Math.floor(result.gameDuration / 60) : 0;
+  const secs = result.gameDuration ? result.gameDuration % 60 : 0;
+  const durationStr = result.gameDuration ? ` | ${mins}m${secs}s` : '';
 
   return [
-    `Resultado: ${outcome}`,
+    `Resultado: ${outcome}${durationStr}`,
     `Campeão: ${result.championName}`,
     `KDA: ${kda}`,
     `LP: ${result.lp} | ${result.tier} ${result.rank}`,
@@ -70,12 +77,19 @@ async function sendWhatsAppMessage(phone: string, message: string, delayMessage 
  * ou se a variável de ambiente `WAPI_DEFAULT_PHONE` estiver definida.
  */
 export async function notifyMatchResult(result: MatchResult, phone?: string): Promise<boolean> {
-  const outcome = result.win ? 'VITORIA' : 'DERROTA';
+  let outcome = result.win ? 'VITORIA' : 'DERROTA';
+  if (result.gameDuration && result.gameDuration < 240) {
+    outcome = 'REMAKE';
+  }
   const kda = `${result.kills}/${result.deaths}/${result.assists}`;
+  const mins = result.gameDuration ? Math.floor(result.gameDuration / 60) : 0;
+  const secs = result.gameDuration ? result.gameDuration % 60 : 0;
+  const durationStr = result.gameDuration ? `${mins}m${secs}s` : 'N/A';
 
   console.log('');
   console.log('========================================');
   console.log(`  [RESULTADO] ${outcome}`);
+  console.log(`  [DURACAO] ${durationStr}`);
   console.log(`  [CAMPEAO] ${result.championName}`);
   console.log(`  [KDA] ${kda}`);
   console.log(`  [LP] ${result.lp} | ${result.tier} ${result.rank}`);
@@ -149,7 +163,7 @@ export async function notifyLastSavedMatch(phone?: string): Promise<boolean> {
 
     const matchResult: MatchResult = {
       matchId: m.matchId,
-      win: !!m.win,
+      win: m.win === null ? null : !!m.win,
       kills: m.kills || 0,
       deaths: m.deaths || 0,
       assists: m.assists || 0,
@@ -157,6 +171,7 @@ export async function notifyLastSavedMatch(phone?: string): Promise<boolean> {
       lp: m.lp || 0,
       tier: m.tier || '',
       rank: m.rank || '',
+      gameDuration: m.gameDuration,
     };
 
     const sent = await notifyMatchResult(matchResult, phone);

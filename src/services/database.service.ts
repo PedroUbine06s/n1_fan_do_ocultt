@@ -3,7 +3,7 @@ import { prisma } from './db-init.service';
 // Avoid importing MatchResult from notification.service to prevent circular imports.
 export interface MatchResultRecord {
   matchId: string;
-  win: boolean;
+  win: boolean | null;
   kills: number;
   deaths: number;
   assists: number;
@@ -12,6 +12,7 @@ export interface MatchResultRecord {
   tier: string;
   rank: string;
   playedAt?: Date | string | number | null;
+  gameDuration?: number | null;
 }
 
 export async function saveMatch(matchResult: MatchResultRecord): Promise<boolean> {
@@ -26,6 +27,7 @@ export async function saveMatch(matchResult: MatchResultRecord): Promise<boolean
       lp: matchResult.lp,
       tier: matchResult.tier,
       rank: matchResult.rank,
+      gameDuration: matchResult.gameDuration,
     };
 
     if (matchResult.playedAt) {
@@ -65,8 +67,10 @@ export async function getMatchHistory(limit = 10): Promise<any[]> {
 export async function getStats() {
   try {
     const matches = await prisma.match.findMany();
-    const wins = matches.filter((m: any) => m.win).length;
-    const losses = matches.length - wins;
+    const validMatches = matches.filter((m: any) => m.win !== null);
+
+    const wins = validMatches.filter((m: any) => m.win === true).length;
+    const losses = validMatches.length - wins;
     const totalKills = matches.reduce((sum: number, m: any) => sum + m.kills, 0);
     const totalDeaths = matches.reduce((sum: number, m: any) => sum + m.deaths, 0);
     const totalAssists = matches.reduce((sum: number, m: any) => sum + m.assists, 0);
@@ -76,7 +80,7 @@ export async function getStats() {
       totalMatches: matches.length,
       wins,
       losses,
-      winRate: matches.length > 0 ? ((wins / matches.length) * 100).toFixed(2) : '0.00',
+      winRate: validMatches.length > 0 ? ((wins / validMatches.length) * 100).toFixed(2) : '0.00',
       totalKills,
       totalDeaths,
       totalAssists,

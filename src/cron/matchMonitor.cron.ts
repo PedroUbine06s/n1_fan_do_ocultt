@@ -89,10 +89,14 @@ async function processMatch(matchId: string): Promise<void> {
   const player = match.info.participants.find((p) => p.puuid === puuid);
   if (!player) return;
 
-  if (player.win) {
-    recordWin();
-  } else {
-    recordLoss();
+  const isRemake = match.info.gameDuration < 240;
+
+  if (!isRemake) {
+    if (player.win) {
+      recordWin();
+    } else {
+      recordLoss();
+    }
   }
 
   const entries = await getRankedEntries(puuid);
@@ -103,7 +107,7 @@ async function processMatch(matchId: string): Promise<void> {
 
     const sent = await notifyMatchResult({
       matchId,
-      win: player.win,
+      win: isRemake ? null : player.win,
       kills: player.kills,
       deaths: player.deaths,
       assists: player.assists,
@@ -111,6 +115,7 @@ async function processMatch(matchId: string): Promise<void> {
       lp: soloQ.leaguePoints,
       tier: soloQ.tier,
       rank: soloQ.rank,
+      gameDuration: match.info.gameDuration,
     });
 
     console.log(`[NOTIF] Envio WhatsApp: ${sent ? 'SUCESSO' : 'FALHA/NÃO_ENVIADO'}`);
@@ -118,7 +123,7 @@ async function processMatch(matchId: string): Promise<void> {
     // Salvar match no banco de dados
     const saved = await saveMatch({
       matchId,
-      win: player.win,
+      win: isRemake ? null : player.win,
       kills: player.kills,
       deaths: player.deaths,
       assists: player.assists,
@@ -127,6 +132,7 @@ async function processMatch(matchId: string): Promise<void> {
       tier: soloQ.tier,
       rank: soloQ.rank,
       playedAt: match.info.gameCreation ? new Date(match.info.gameCreation) : undefined,
+      gameDuration: match.info.gameDuration,
     });
 
     console.log(`[DB] Salvamento: ${saved ? 'SUCESSO' : 'FALHA'}`);

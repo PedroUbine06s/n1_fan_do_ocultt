@@ -21,7 +21,7 @@ router.post('/import-last', async (req: Request, res: Response) => {
     const rankedEntries = await getRankedEntries(puuid);
     const soloEntry = rankedEntries.find((e) => e.queueType === 'RANKED_SOLO_5x5') || rankedEntries[0] || null;
 
-    const results: { matchId: string; saved: boolean; reason?: string }[] = [];
+    const results: { matchId: string; saved: boolean; reason?: string; win?: boolean | null; gameDuration?: number | null }[] = [];
 
     for (const mid of matchIds) {
       // check duplicate
@@ -44,9 +44,10 @@ router.post('/import-last', async (req: Request, res: Response) => {
         continue;
       }
 
+      const isRemake = detail.info.gameDuration ? detail.info.gameDuration < 240 : false;
       const matchRecord = {
         matchId: detail.metadata.matchId || mid,
-        win: participant.win,
+        win: isRemake ? null : participant.win,
         kills: participant.kills,
         deaths: participant.deaths,
         assists: participant.assists,
@@ -55,10 +56,17 @@ router.post('/import-last', async (req: Request, res: Response) => {
         tier: soloEntry?.tier ?? '',
         rank: soloEntry?.rank ?? '',
         playedAt: detail.info.gameCreation ? new Date(detail.info.gameCreation) : undefined,
+        gameDuration: detail.info.gameDuration,
       };
 
       const saved = await saveMatch(matchRecord as any);
-      results.push({ matchId: mid, saved: !!saved, reason: saved ? undefined : 'save_failed' });
+      results.push({
+        matchId: mid,
+        saved: !!saved,
+        reason: saved ? undefined : 'save_failed',
+        win: matchRecord.win,
+        gameDuration: matchRecord.gameDuration
+      });
     }
 
     res.json({ success: true, imported: results });

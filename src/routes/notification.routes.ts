@@ -32,6 +32,7 @@ notificationRouter.post('/test', async (req: Request, res: Response) => {
       tier = 'Gold',
       rank = 'II',
       phone,
+      gameDuration = null, // Default can be null (no info) or an integer
     } = req.body || {};
 
     const matchResult: MatchResult = {
@@ -44,6 +45,7 @@ notificationRouter.post('/test', async (req: Request, res: Response) => {
       lp,
       tier,
       rank,
+      gameDuration,
     };
 
     console.log(`[NOTIF_TEST] Disparando notificação de teste...`);
