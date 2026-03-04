@@ -52,7 +52,7 @@ export async function getMatchHistory(limit = 10): Promise<any[]> {
   try {
     const matches = await prisma.match.findMany({
       orderBy: [
-        { playedAt: 'desc' },
+        { playedAt: { sort: 'desc', nulls: 'last' } },
         { createdAt: 'desc' },
       ],
       take: limit,
