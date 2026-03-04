@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { listRecipients, getMatchHistory } from './database.service';
+import { listRecipients, getMatchHistory, getMatchById } from './database.service';
 import { getDistanceToGold } from './tracker.service';
 
 export interface MatchResult {
@@ -148,18 +148,27 @@ export async function notifyMatchResult(result: MatchResult, phone?: string): Pr
 }
 
 /**
- * Busca a última partida salva no banco e dispara notificações usando `notifyMatchResult`.
- * Se `phone` for fornecido, envia apenas para esse número; caso contrário envia para recipients ativos.
+ * Busca a partida pelo matchId ou a última partida salva no banco e dispara notificações.
+ * Se `phone` for fornecido, envia apenas para esse número.
  */
-export async function notifyLastSavedMatch(phone?: string): Promise<boolean> {
+export async function notifySavedMatch(phone?: string, matchId?: string): Promise<boolean> {
   try {
-    const matches = await getMatchHistory(1);
-    if (!matches || matches.length === 0) {
-      console.warn('[NOTIF] Nenhuma partida encontrada no banco para enviar.');
-      return false;
-    }
+    let m: any = null;
 
-    const m = matches[0] as any;
+    if (matchId) {
+      m = await getMatchById(matchId);
+      if (!m) {
+        console.warn(`[NOTIF] Partida com ID ${matchId} não encontrada no banco.`);
+        return false;
+      }
+    } else {
+      const matches = await getMatchHistory(1);
+      if (!matches || matches.length === 0) {
+        console.warn('[NOTIF] Nenhuma partida encontrada no banco para enviar.');
+        return false;
+      }
+      m = matches[0];
+    }
 
     const matchResult: MatchResult = {
       matchId: m.matchId,
