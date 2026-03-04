@@ -13,6 +13,7 @@ import {
   recordLoss,
   updateRankInfo,
   getDistanceToGold,
+  getDistanceToIronI,
   setLastActiveGameId,
 } from '../services/tracker.service';
 import { notifyMatchResult, notifyPlayerOnline } from '../services/notification.service';
@@ -61,11 +62,13 @@ async function initialize(): Promise<void> {
   if (soloQ) {
     updateRankInfo(soloQ.tier, soloQ.rank, soloQ.leaguePoints);
     const distance = getDistanceToGold();
+    const distanceIron = getDistanceToIronI();
     console.log(`[RANK] Elo atual: ${soloQ.tier} ${soloQ.rank} ${soloQ.leaguePoints} LP`);
-    if (distance.alreadyGold) {
-      console.log('[RANK] Ja esta em Gold ou acima!');
-    } else {
+    if (!distance.alreadyGold) {
       console.log(`[RANK] Distancia ate Gold: ${distance.divisions} divisoes (~${distance.estimatedLP} LP)`);
+    }
+    if (!distanceIron.alreadyIronI) {
+      console.log(`[RANK] Distancia ate Iron I: ${distanceIron.divisions} divisoes (~${distanceIron.estimatedLP} LP)`);
     }
   } else {
     console.log('[RANK] Dados de ranqueada Solo/Duo nao encontrados (sem rank ou em md10)');
@@ -176,9 +179,13 @@ async function checkForNewMatches(retry = true): Promise<void> {
 
     const updated = getState();
     const distance = getDistanceToGold();
+    const distanceIron = getDistanceToIronI();
     console.log(`[SESSAO] ${updated.wins}V ${updated.losses}D | ${updated.currentTier} ${updated.currentRank} ${updated.currentLP} LP`);
     if (!distance.alreadyGold) {
       console.log(`[GOLD] Faltam: ${distance.divisions} divisao(oes), ~${distance.estimatedLP} LP`);
+    }
+    if (!distanceIron.alreadyIronI) {
+      console.log(`[IRON] Faltam: ${distanceIron.divisions} divisao(oes), ~${distanceIron.estimatedLP} LP`);
     }
   } catch (error) {
     if (isDecryptionError(error) && retry) {

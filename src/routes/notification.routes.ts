@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { notifyMatchResult, MatchResult, notifyLastSavedMatch } from '../services/notification.service';
+import { notifyMatchResult, MatchResult, notifySavedMatch } from '../services/notification.service';
 
 const notificationRouter = Router();
 
@@ -75,10 +75,10 @@ notificationRouter.post('/test', async (req: Request, res: Response) => {
  */
 notificationRouter.post('/send-last', async (req: Request, res: Response) => {
   try {
-    const { phone } = req.body || {};
+    const { phone, matchId } = req.body || {};
 
-    console.log('[NOTIF_SEND_LAST] Iniciando envio da última partida...');
-    const sent = await notifyLastSavedMatch(phone);
+    console.log(`[NOTIF_SEND_LAST] Iniciando envio da partida ${matchId ? matchId : '(última)'}...`);
+    const sent = await notifySavedMatch(phone, matchId);
 
     res.status(200).json({
       success: true,

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { listRecipients, getMatchHistory } from './database.service';
-import { getDistanceToGold } from './tracker.service';
+import { listRecipients, getMatchHistory, getMatchById } from './database.service';
+import { getDistanceToGold, getDistanceToIronI } from './tracker.service';
 
 export interface MatchResult {
   matchId: string;
@@ -98,14 +98,20 @@ export async function notifyMatchResult(result: MatchResult, phone?: string): Pr
 
   const baseMessage = formatMatchMessage(result);
 
-  // Append current elo and distance to Gold IV
-  const distance = getDistanceToGold();
+  // Append current elo and distance to goals
+  const distanceGold = getDistanceToGold();
+  const distanceIron = getDistanceToIronI();
   const eloLine = `Elo atual: ${result.tier} ${result.rank} ${result.lp} LP`;
-  const distanceLine = distance.alreadyGold
-    ? 'Status: já está em Gold IV ou acima.'
-    : `Faltam ${distance.divisions} divisão(ões) (~${distance.estimatedLP} LP) até GOLD IV`;
 
-  const message = [baseMessage, eloLine, distanceLine].join('\n');
+  const distanceGoldLine = distanceGold.alreadyGold
+    ? 'Status: já está em Gold IV ou acima.'
+    : `Faltam ${distanceGold.divisions} divisão(ões) (~${distanceGold.estimatedLP} LP) até GOLD IV`;
+
+  const distanceIronLine = distanceIron.alreadyIronI
+    ? 'Status: já chegou em casa (iron 1).'
+    : `Faltam ${distanceIron.divisions} divisão(ões) (~${distanceIron.estimatedLP} LP) até voltar pra casa`;
+
+  const message = [baseMessage, eloLine, distanceGoldLine, distanceIronLine].join('\n');
 
   // If a specific phone was provided, send only to it.
   if (phone) {
@@ -148,18 +154,27 @@ export async function notifyMatchResult(result: MatchResult, phone?: string): Pr
 }
 
 /**
- * Busca a última partida salva no banco e dispara notificações usando `notifyMatchResult`.
- * Se `phone` for fornecido, envia apenas para esse número; caso contrário envia para recipients ativos.
+ * Busca a partida pelo matchId ou a última partida salva no banco e dispara notificações.
+ * Se `phone` for fornecido, envia apenas para esse número.
  */
-export async function notifyLastSavedMatch(phone?: string): Promise<boolean> {
+export async function notifySavedMatch(phone?: string, matchId?: string): Promise<boolean> {
   try {
-    const matches = await getMatchHistory(1);
-    if (!matches || matches.length === 0) {
-      console.warn('[NOTIF] Nenhuma partida encontrada no banco para enviar.');
-      return false;
-    }
+    let m: any = null;
 
-    const m = matches[0] as any;
+    if (matchId) {
+      m = await getMatchById(matchId);
+      if (!m) {
+        console.warn(`[NOTIF] Partida com ID ${matchId} não encontrada no banco.`);
+        return false;
+      }
+    } else {
+      const matches = await getMatchHistory(1);
+      if (!matches || matches.length === 0) {
+        console.warn('[NOTIF] Nenhuma partida encontrada no banco para enviar.');
+        return false;
+      }
+      m = matches[0];
+    }
 
     const matchResult: MatchResult = {
       matchId: m.matchId,

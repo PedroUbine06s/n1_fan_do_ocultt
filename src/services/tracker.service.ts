@@ -10,6 +10,7 @@ const RANK_LADDER = [
 ];
 
 const GOLD_IV_INDEX = RANK_LADDER.indexOf('GOLD IV');
+const IRON_I_INDEX = RANK_LADDER.indexOf('IRON I');
 
 export interface TrackerState {
   lastMatchId: string | null;
@@ -66,36 +67,66 @@ export function updateRankInfo(tier: string, rank: string, lp: number): void {
   });
 }
 
-export function getDistanceToGold(): { divisions: number; estimatedLP: number; currentPosition: string; alreadyGold: boolean } {
+export function getDistanceToRank(targetRank: string, goal: 'climb' | 'drop' = 'climb'): { divisions: number; estimatedLP: number; currentPosition: string; alreadyThere: boolean } {
   const currentKey = `${state.currentTier} ${state.currentRank}`;
   const currentIndex = RANK_LADDER.indexOf(currentKey);
+  const targetIndex = RANK_LADDER.indexOf(targetRank);
 
-  if (currentIndex === -1) {
+  if (currentIndex === -1 || targetIndex === -1) {
     return {
       divisions: 0,
       estimatedLP: 0,
       currentPosition: currentKey,
-      alreadyGold: false,
+      alreadyThere: false,
     };
   }
 
-  if (currentIndex >= GOLD_IV_INDEX) {
+  const alreadyThere = goal === 'climb' ? currentIndex >= targetIndex : currentIndex <= targetIndex;
+
+  if (alreadyThere) {
     return {
       divisions: 0,
       estimatedLP: 0,
       currentPosition: currentKey,
-      alreadyGold: true,
+      alreadyThere: true,
     };
   }
 
-  const divisionsAway = GOLD_IV_INDEX - currentIndex;
-  const lpInCurrentDivision = 100 - state.currentLP;
-  const estimatedLP = lpInCurrentDivision + (divisionsAway - 1) * 100;
+  const divisionsAway = Math.abs(targetIndex - currentIndex);
+  let estimatedLP = 0;
+
+  if (goal === 'climb') {
+    const lpInCurrentDivision = 100 - state.currentLP;
+    estimatedLP = lpInCurrentDivision + (divisionsAway - 1) * 100;
+  } else {
+    // Para descer (drop): LP atual + (divisões - 1) * 100
+    estimatedLP = state.currentLP + (divisionsAway - 1) * 100;
+  }
 
   return {
     divisions: divisionsAway,
     estimatedLP,
     currentPosition: currentKey,
-    alreadyGold: false,
+    alreadyThere: false,
+  };
+}
+
+export function getDistanceToGold(): { divisions: number; estimatedLP: number; currentPosition: string; alreadyGold: boolean } {
+  const dist = getDistanceToRank('GOLD IV', 'climb');
+  return {
+    divisions: dist.divisions,
+    estimatedLP: dist.estimatedLP,
+    currentPosition: dist.currentPosition,
+    alreadyGold: dist.alreadyThere,
+  };
+}
+
+export function getDistanceToIronI(): { divisions: number; estimatedLP: number; currentPosition: string; alreadyIronI: boolean } {
+  const dist = getDistanceToRank('IRON I', 'drop');
+  return {
+    divisions: dist.divisions,
+    estimatedLP: dist.estimatedLP,
+    currentPosition: dist.currentPosition,
+    alreadyIronI: dist.alreadyThere,
   };
 }

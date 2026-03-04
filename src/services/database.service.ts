@@ -64,6 +64,16 @@ export async function getMatchHistory(limit = 10): Promise<any[]> {
   }
 }
 
+export async function getMatchById(matchId: string): Promise<any | null> {
+  try {
+    const match = await prisma.match.findUnique({ where: { matchId } });
+    return match;
+  } catch (error) {
+    console.error(`[DB] Erro ao buscar match por ID:`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
 export async function getStats() {
   try {
     const matches = await prisma.match.findMany();
